@@ -1,44 +1,66 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import sqlite3
 import json
 from urllib.parse import urlparse, parse_qs
 
-streamers = {
-    "StreamerOne": {
-        "viewers": 12450,
-        "followers": 245000,
-        "average_online": 11900,
-        "peak": 18721,
-        "online": True,
-        "history": [1, 140, 680, 2300, 9100, 12000, 10500, 12500]
-    },
+def get_connection():
+    return sqlite3.connect("streamers.db")
+
+def get_all_streamers():
     
-    "StreamerTwo": {
-        "viewers": 0,
-        "followers": 18000,
-        "average_online": 8200,
-        "peak": 15300,
-        "online": False,
-        "history": [5200, 6100, 7300, 6800, 9100, 12000, 10500, 14000, 12500, 15000]
-    },
-    
-    "StreamerThree": {
-        "viewers": 1,
-        "followers": 23,
-        "average_online": 1,
-        "peak": 2,
-        "online": True,
-        "history": [1, 0, 1, 1, 2, 1, 1, 1, 0, 2]
-    },
-    
-    "StreamerFourth": {
-        "viewers": 820,
-        "followers": 21000,
-        "average_online": 950,
-        "peak": 1320,
-        "online": True,
-        "history": [30, 120, 360, 910, 640, 870, 1200, 950, 590, 680]
-    }
-}
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT name, viewers, followers, average_online, peak, online
+        FROM streamers
+    """)
+
+    rows = cursor.fetchall()
+
+    connection.close()
+
+    streamers = {}
+
+    for row in rows:
+        name, viewers, followers, average_online, peak, online = row
+
+        streamers[name] = {
+            "viewers": viewers,
+            "followers": followers,
+            "average_online": average_online,
+            "peak": peak,
+            "online": bool(online)
+        }
+
+    return streamers
+
+def get_streamer(name):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT name, viewers, followers, average_online, peak, online
+        FROM streamers
+        WHERE name = ?
+    """, (name))
+
+    row = cursor.fetchone()
+
+    connection.close()
+
+    if row is None:
+        return None
+
+    return {
+        "name": row[0],
+        "viewers": row[1],
+        "followers": row[2],
+        "average_online": row[3],
+        "peak": row[4],
+        "online": bool(row[5])
+        }
 
 class Handler (BaseHTTPRequestHandler):
 
@@ -59,6 +81,8 @@ class Handler (BaseHTTPRequestHandler):
         url = urlparse(self.path)
 
         if url.path == "/api/streamers":
+
+            streamers = get_all_streamers()
 
             self.send_json(streamers)
             return
