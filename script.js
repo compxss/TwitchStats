@@ -81,15 +81,15 @@ if (streamerName) {
 
                 chart.innerHTML = ""
 
-                apiData.history.forEach(function (number) {
+                apiData.history.forEach(function(point) {
 
                     const bar = document.createElement("div")
 
                     bar.classList.add("bar")
 
-                    bar.style.height = number / 60 + "px"
+                    bar.style.height = point.viewers / 60 + "px"
 
-                    bar.title = number.toLocaleString("ru-RU") + " зрителей"
+                    bar.title = point.viewers.toLocaleString("ru-RU") + " зрителей\n" + point.time
 
                     chart.appendChild(bar)
                 })

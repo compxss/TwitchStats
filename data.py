@@ -41,35 +41,57 @@ def get_streamer(name):
     cursor = connection.cursor()
 
     cursor.execute("""
-        SELECT name, viewers, followers, average_online, peak, online
+        SELECT id, name, viewers, followers, average_online, peak, online
         FROM streamers
         WHERE name = ?
-    """, (name))
+    """, (name,))
 
     row = cursor.fetchone()
 
-    connection.close()
-
     if row is None:
+        connection.close()
         return None
 
+    streamer_id = row[0]
+
+    cursor.execute("""
+        SELECT viewers, recorded_at
+        FROM viewer_history
+        WHERE streamer_id = ?
+        ORDER BY recorded_at ASC
+    """, (streamer_id,))
+
+    history_rows = cursor.fetchall()
+
+    connection.close()
+
+    history = []
+
+    for history_row in history_rows:
+
+        history.append({
+            "viewers": history_row[0],
+            "time": history_row[1]
+        })
+
     return {
-        "name": row[0],
-        "viewers": row[1],
-        "followers": row[2],
-        "average_online": row[3],
-        "peak": row[4],
-        "online": bool(row[5])
+        "name": row[1],
+        "viewers": row[2],
+        "followers": row[3],
+        "average_online": row[4],
+        "peak": row[5],
+        "online": bool(row[6]),
+        "history": history
         }
 
 class Handler (BaseHTTPRequestHandler):
 
-    def send_json(self, data):
+    def send_json(self, data, status=200):
         response = json.dumps(data, ensure_ascii=False)
 
-        self.send_response(200)
+        self.send_response(status)
 
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Access-Control-Allow-Origin", "*")
         
         self.end_headers()
@@ -85,6 +107,7 @@ class Handler (BaseHTTPRequestHandler):
             streamers = get_all_streamers()
 
             self.send_json(streamers)
+
             return
         
         if url.path == "/api/streamer":
@@ -93,32 +116,43 @@ class Handler (BaseHTTPRequestHandler):
 
             name = params.get("name", [None])[0]
 
-            if name in streamers:
+            if name is None:
 
-                data = {
-                    "name": name,
-                    **streamers[name]
-                }
+                self.send_json(
+                    {
+                        "error":
+                        "Streamer's name not specified"
+                    },
+                    400
+                )
 
-                self.send_json(data)
+                return
 
-            else:
-                
-                self.send_response(404)
+            streamer = get_streamer(name)
 
-                self.send_header("Access-Control-Allow-Origin", "*")
-                
-                self.end_headers()
+            if streamer is None:
 
-                self.wfile.write(b"Streamer not found")
-            
+                self.send_json(
+                    {
+                        "error":
+                        "Streamer is not found"
+                    },
+                    404
+                )
+
+                return
+
+            self.send_json(streamer)
+
             return
 
-        self.send_response(404)
-
-        self.send_header("Access-Control-Allow-Origin", "*")
-        
-        self.end_headers()
+        self.send_json(
+            {
+                "error":
+                "Page is not found"
+            },
+            404
+        )
 
 server = HTTPServer(("localhost", 8000), Handler)
 
