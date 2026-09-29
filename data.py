@@ -12,7 +12,7 @@ def get_all_streamers():
     cursor = connection.cursor()
 
     cursor.execute("""
-        SELECT name, viewers, followers, average_online, peak, online
+        SELECT name, viewers, followers, peak, online
         FROM streamers
     """)
 
@@ -23,12 +23,11 @@ def get_all_streamers():
     streamers = {}
 
     for row in rows:
-        name, viewers, followers, average_online, peak, online = row
+        name, viewers, followers, peak, online = row
 
         streamers[name] = {
             "viewers": viewers,
             "followers": followers,
-            "average_online": average_online,
             "peak": peak,
             "online": bool(online)
         }
@@ -41,7 +40,7 @@ def get_streamer(name):
     cursor = connection.cursor()
 
     cursor.execute("""
-        SELECT id, name, viewers, followers, average_online, peak, online
+        SELECT id, name, viewers, followers, peak, online
         FROM streamers
         WHERE name = ?
     """, (name,))
@@ -74,13 +73,18 @@ def get_streamer(name):
             "time": history_row[1]
         })
 
+    if history_rows:
+        average = sum(row[0] for row in history_rows) // len(history_rows)
+    else:
+        average = 0
+
     return {
         "name": row[1],
         "viewers": row[2],
         "followers": row[3],
-        "average_online": row[4],
-        "peak": row[5],
-        "online": bool(row[6]),
+        "average": average,
+        "peak": row[4],
+        "online": bool(row[5]),
         "history": history
         }
 

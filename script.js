@@ -33,7 +33,11 @@ const streamerName = params.get("name")
 
 let selectedStreamer = null
 
-if (streamerName) {
+function loadStreamer() {
+
+    if (!streamerName) {
+        return
+    }
     
     fetch(
         "http://localhost:8000/api/streamer?name="
@@ -53,16 +57,19 @@ if (streamerName) {
 
             console.log("Получили данные:", apiData)
 
-            selectedStreamer = apiData
-
             const nameElement = document.getElementById("streamer-name")
             if (nameElement) {
                 nameElement.textContent = apiData.name
             }
 
-            const average_online = document.getElementById("average_online")
-            if (average_online) {
-                average_online.textContent = apiData.average_online.toLocaleString("ru-RU")
+            const current_viewers = document.getElementById("viewers")
+            if (current_viewers) {
+                current_viewers.textContent = apiData.viewers.toLocaleString("ru-RU")
+            }
+
+            const average = document.getElementById("average")
+            if (average) {
+                average.textContent = apiData.average.toLocaleString("ru-RU")
             }
 
             const followers = document.getElementById("followers")
@@ -158,3 +165,7 @@ if (streamersContainer) {
             )
         })
 }
+
+loadStreamer()
+
+setInterval(loadStreamer, 10000)

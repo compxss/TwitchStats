@@ -15,7 +15,6 @@ def create_database():
             name TEXT UNIQUE NOT NULL,
             viewers INTEGER DEFAULT 0,
             followers INTEGER DEFAULT 0,
-            average_online INTEGER DEFAULT 0,
             peak INTEGER DEFAULT 0,
             online INTEGER DEFAULT 0
         )
@@ -35,21 +34,20 @@ def create_database():
     connection.commit()
     connection.close()
 
-def add_streamer(name, viewers, followers, average_online, peak, online):
+def add_streamer(name, viewers, followers, peak, online):
 
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute("""
         INSERT OR REPLACE INTO streamers
-        (name, viewers, followers, average_online, peak, online)
+        (name, viewers, followers, peak, online)
 
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?)
     """, (
         name,
         viewers,
         followers,
-        average_online,
         peak,
         int(online)
     ))
@@ -103,7 +101,6 @@ add_streamer(
     "StreamerOne",
     12450,
     245000,
-    11900,
     18721,
     True
 )
@@ -112,7 +109,6 @@ add_streamer(
     "StreamerTwo",
     0,
     18000,
-    8200,
     15300,
     False
 )
@@ -121,7 +117,6 @@ add_streamer(
     "StreamerThree",
     1,
     23,
-    1,
     2,
     True
 )
@@ -130,7 +125,6 @@ add_streamer(
     "StreamerFourth",
     820,
     21000,
-    950,
     1320,
     True
 )
