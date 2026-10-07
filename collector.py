@@ -24,18 +24,86 @@ def get_streamers():
 
     return streamers
 
-def save_viewers(streamer_id, viewers):
+def get_open_session(streamer_id):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT id
+        FROM stream_sessions
+        WHERE streamer_id = ?
+        AND ended_at IS NULL
+        ORDER BY id DESC
+        LIMIT 1
+    """, (streamer_id,))
+
+    row = cursor.fetchone()
+
+    connection.close()
+
+    if row:
+        return row[0]
+    
+    return None
+
+def start_session(streamer_id):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        INSERT INTO stream_sessions
+        (streamer_id, started_at)
+
+        VALUES (?, ?)
+    """, (
+        streamer_id,
+        datetime.now().isoformat()
+    ))
+
+    session_id = cursor.lastrowid
+
+    connection.commit()
+    connection.close()
+
+    print("New stream session:", session_id)
+
+    return session_id
+
+def end_session(streamer_id):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        UPDATE streamer_sessions
+        SET ended_at = ?
+        WHERE streamer_id = ?
+        AND ended_at IS NULL
+    """, (
+        datetime.now().isoformat(),
+        streamer_id
+    ))
+
+    connection.commit()
+    connection.close()
+
+    print("Stream session ended")
+
+def save_viewers(streamer_id, session_id, viewers):
 
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute("""
         INSERT INTO viewer_history
-        (streamer_id, viewers, recorded_at)
+        (streamer_id, session_id, viewers, recorded_at)
 
-        VALUES (?, ?, ?)
+        VALUES (?, ?, ?, ?)
     """, (
         streamer_id,
+        session_id,
         viewers,
         datetime.now().isoformat()
     ))
@@ -56,7 +124,7 @@ while True:
 
     streamers = get_streamers()
 
-    print("\ndata collection...")
+    print("\nCollecting statistics...")
 
     for streamer in streamers:
 
@@ -66,10 +134,21 @@ while True:
 
         data = get_streamer_data(name, current_viewers)
 
-        new_viewers = data["viewers"]
+        online = data["online"]
 
-        save_viewers(streamer_id, new_viewers)
+        session_id = get_open_session(streamer_id)
 
-        print(name, "->", new_viewers, "зрителей")
+        if online and session_id is None:
+            session_id = start_session(streamer_id)
+
+        elif not online and session_id is not None:
+            end_session(streamer_id)
+
+            session_id = None
+
+        if online and session_id is not None:
+
+            save_viewers(streamer_id, session_id, data["viewers"])
+            print(name, "->", data["viewers"], "зрителей")
 
     time.sleep(10)

@@ -12,6 +12,7 @@ def create_database():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS streamers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+
             name TEXT UNIQUE NOT NULL,
             viewers INTEGER DEFAULT 0,
             followers INTEGER DEFAULT 0,
@@ -23,9 +24,27 @@ def create_database():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS viewer_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+
             streamer_id INTEGER NOT NULL,
+            session_id INTENGER,
+
             viewers INTEGER NOT NULL,
             recorded_at TEXT NOT NULL,
+
+            FOREIGN KEY (streamer_id)
+                REFERENCES streamers(id)
+            FOREIGN KEY (session_id)
+                REFERENCES stream_sessions(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS stream_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            streamer_id INTEGER NOT NULL,
+            started_at TEXT NOT NULL,
+            ended_at TEXT,
             FOREIGN KEY (streamer_id)
                 REFERENCES streamers(id)
         )

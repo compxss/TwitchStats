@@ -11,5 +11,6 @@ def get_streamer_data(name, current_viewers):
 
     return {
         "name": name, 
-        "viewers": viewers
+        "viewers": viewers,
+        "online": True
     }
